@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37012.4 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GymRatService", "GymRatService\GymRatService.csproj", "{CE0D66D8-384C-4B56-8770-6C09A3099A13}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CE0D66D8-384C-4B56-8770-6C09A3099A13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE0D66D8-384C-4B56-8770-6C09A3099A13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE0D66D8-384C-4B56-8770-6C09A3099A13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE0D66D8-384C-4B56-8770-6C09A3099A13}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DCAA27F5-12B6-4A16-8489-6EF9636A7830}
+	EndGlobalSection
+EndGlobal

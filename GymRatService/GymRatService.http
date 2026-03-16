@@ -1,0 +1,6 @@
+@GymRatService_HostAddress = http://localhost:5243
+
+GET {{GymRatService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
