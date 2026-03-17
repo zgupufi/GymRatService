@@ -14,9 +14,9 @@ namespace GymRatService.BLL.Services;
 public class AuthService : IAuthService
 {
     private readonly IConfiguration _config;
-    private readonly IQueryHandler _queryHandler;
+    private readonly IUserQueryHandler _queryHandler;
 
-    public AuthService(IConfiguration config, IQueryHandler queryHandler)
+    public AuthService(IConfiguration config, IUserQueryHandler queryHandler)
     {
         _config = config;
         _queryHandler = queryHandler;

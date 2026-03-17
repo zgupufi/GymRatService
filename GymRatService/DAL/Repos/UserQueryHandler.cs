@@ -6,10 +6,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GymRatService.DAL.Repos
 {
-    public class QueryHandler: IQueryHandler
+    public class UserQueryHandler: IUserQueryHandler
     {
         private readonly DBContext _context;
-        public QueryHandler(DBContext context)
+        public UserQueryHandler(DBContext context)
         {
             _context = context;
         }

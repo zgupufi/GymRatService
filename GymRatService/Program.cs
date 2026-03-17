@@ -15,12 +15,27 @@ namespace GymRatService
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             // Add services to the container.
 
+            // 1. Definim politica CORS pentru frontend-ul React
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowReactApp",
+                    policy =>
+                    {
+                        policy.WithOrigins("http://localhost:5173") 
+                              .AllowAnyHeader()
+                              .AllowAnyMethod();
+                    });
+            });
+
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddDbContext<DBContext>(options => options.UseNpgsql(connectionString));
-            builder.Services.AddScoped<IQueryHandler, QueryHandler>();
+
+            builder.Services.AddScoped<IUserQueryHandler, UserQueryHandler>();
             builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IExercisesHandler, ExercisesHandler>();
+            builder.Services.AddScoped<IExercisesService, ExercisesService>();
 
             var app = builder.Build();
 
@@ -33,8 +48,9 @@ namespace GymRatService
 
             app.UseHttpsRedirection();
 
-            app.UseAuthorization();
+            app.UseCors("AllowReactApp");
 
+            app.UseAuthorization();
 
             app.MapControllers();
 

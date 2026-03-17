@@ -1,0 +1,15 @@
+﻿namespace GymRatService.Common.Models
+{
+    public class Exercise
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string MainMuscle { get; set; } = string.Empty;
+        public string? SubMuscles { get; set; }
+        public string? Equipment { get; set; }
+        public string? Difficulty { get; set; }
+        public string? Description { get; set; }
+        public string? YoutubeLink { get; set; }
+    }
+
+}

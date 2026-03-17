@@ -2,7 +2,7 @@
 
 namespace GymRatService.DAL.Core
 {
-    public interface IQueryHandler
+    public interface IUserQueryHandler
     {
         Task<User?>FindUserByEmailAsync(string email);
         Task<User> RegisterUserAsync(User user);

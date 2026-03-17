@@ -1,10 +1,7 @@
 ﻿using GymRatService.BLL.Core.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-
 using GymRatService.Common.DTOs;
-using GymRatService.BLL.Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using GymRatService.Common.Models;
 
 namespace GymRatService.Controllers
 {
@@ -18,7 +15,7 @@ namespace GymRatService.Controllers
         {
             _authService = authService;
         }
-
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
@@ -36,7 +33,7 @@ namespace GymRatService.Controllers
 
             return Ok(result);
         }
-
+        [AllowAnonymous]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest registerUser)
         {             if (registerUser is null)
