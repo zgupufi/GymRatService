@@ -1,18 +1,18 @@
 ﻿using System.Linq;
 using GymRatService.BLL.Core.Interfaces;
 using GymRatService.Common.Models;
-using GymRatService.DAL.Core;
+using GymRatService.DAL.Core.Interfaces;
 
 namespace GymRatService.BLL.Services
 {
     public class ExercisesService : IExercisesService
     {
-        private readonly IExercisesHandler _handler;
-        public ExercisesService(IExercisesHandler handler) 
+        private readonly IExerciseCardsRepository _handler;
+        public ExercisesService(IExerciseCardsRepository handler) 
         {
             _handler = handler;
         }
-        public async Task<List<Exercise>> GetExercisesAsync()
+        public async Task<List<ExerciseCard>> GetExercisesAsync()
         {
             var exercises = await _handler.GetExercisesAsync().ConfigureAwait(false);
 
@@ -21,7 +21,7 @@ namespace GymRatService.BLL.Services
                 return null;
             }
 
-            if (exercises is List<Exercise> list)
+            if (exercises is List<ExerciseCard> list)
             {
                 return list;
             }

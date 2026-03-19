@@ -2,14 +2,15 @@
 using System.Threading.Tasks;
 using GymRatService.Common.Models;
 using GymRatService.DAL.Core;
+using GymRatService.DAL.Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymRatService.DAL.Repos
 {
-    public class UserQueryHandler: IUserQueryHandler
+    public class UserRepository: IUserRepository
     {
         private readonly DBContext _context;
-        public UserQueryHandler(DBContext context)
+        public UserRepository(DBContext context)
         {
             _context = context;
         }

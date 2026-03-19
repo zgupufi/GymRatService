@@ -1,5 +1,5 @@
 ﻿using GymRatService.BLL.Core.Interfaces;
-using GymRatService.Common.DTOs;
+using GymRatService.Common.DTOs.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

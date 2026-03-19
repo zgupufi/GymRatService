@@ -1,8 +1,8 @@
 ﻿using GymRatService.Common.Models;
 
-namespace GymRatService.DAL.Core
+namespace GymRatService.DAL.Core.Interfaces
 {
-    public interface IUserQueryHandler
+    public interface IUserRepository
     {
         Task<User?>FindUserByEmailAsync(string email);
         Task<User> RegisterUserAsync(User user);

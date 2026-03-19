@@ -1,7 +1,7 @@
 ﻿using GymRatService.BLL.Core.Interfaces;
-using GymRatService.Common.DTOs;
+using GymRatService.Common.DTOs.Auth;
 using GymRatService.Common.Models;
-using GymRatService.DAL.Core;
+using GymRatService.DAL.Core.Interfaces;
 using GymRatService.DAL.Repos;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -14,9 +14,9 @@ namespace GymRatService.BLL.Services;
 public class AuthService : IAuthService
 {
     private readonly IConfiguration _config;
-    private readonly IUserQueryHandler _queryHandler;
+    private readonly IUserRepository _queryHandler;
 
-    public AuthService(IConfiguration config, IUserQueryHandler queryHandler)
+    public AuthService(IConfiguration config, IUserRepository queryHandler)
     {
         _config = config;
         _queryHandler = queryHandler;

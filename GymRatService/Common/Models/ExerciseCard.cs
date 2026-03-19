@@ -1,6 +1,6 @@
 ﻿namespace GymRatService.Common.Models
 {
-    public class Exercise
+    public class ExerciseCard
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;

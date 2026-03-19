@@ -1,4 +1,4 @@
-﻿using GymRatService.Common.DTOs;
+﻿using GymRatService.Common.DTOs.Auth;
 using GymRatService.Common.Models;
 
 namespace GymRatService.BLL.Core.Interfaces;

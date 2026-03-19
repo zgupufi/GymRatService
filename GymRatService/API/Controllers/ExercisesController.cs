@@ -14,8 +14,8 @@ namespace GymRatService.API.Controllers
         {
             _exercisesService = exercisesService;
         }
-
-        [HttpGet("exercises")]
+        [AllowAnonymous]
+        [HttpGet]
         public async Task<IActionResult>GetExercises()
         {
             var exercises=await _exercisesService.GetExercisesAsync();

@@ -1,4 +1,4 @@
-﻿namespace GymRatService.Common.DTOs;
+﻿namespace GymRatService.Common.DTOs.Auth;
 
 public class LoginRequest
 {

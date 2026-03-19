@@ -4,6 +4,6 @@ namespace GymRatService.BLL.Core.Interfaces
 {
     public interface IExercisesService
     {
-        Task<List<Exercise>> GetExercisesAsync();
+        Task<List<ExerciseCard>> GetExercisesAsync();
     }
 }

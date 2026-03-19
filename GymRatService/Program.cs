@@ -1,9 +1,13 @@
-using GymRatService.BLL.Core.Interfaces;
+﻿using GymRatService.BLL.Core.Interfaces;
 using GymRatService.BLL.Services;
 using GymRatService.DAL.Core;
+using GymRatService.DAL.Core.Interfaces;
 using GymRatService.DAL.Repos;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Text;
 
 namespace GymRatService
 {
@@ -29,13 +33,67 @@ namespace GymRatService
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(c =>
+            {
+                // Aici adăugăm definiția de securitate (Butonul efectiv și regulile lui)
+                c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Description = @"Add the token.",
+                    Name = "Authorization",
+                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer"
+                });
+
+                // Aici îi spunem la nivel global ca Swagger să ceară acest token pe rutele [Authorize]
+                c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement()
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                },
+                Scheme = "oauth2",
+                Name = "Bearer",
+                In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+            },
+            new List<string>()
+              }
+             });
+            });
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["JwtSettings:Issuer"], // Aici pui setările din appsettings.json
+        ValidAudience = builder.Configuration["JwtSettings:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Key"]))
+    };
+});
+
             builder.Services.AddDbContext<DBContext>(options => options.UseNpgsql(connectionString));
 
-            builder.Services.AddScoped<IUserQueryHandler, UserQueryHandler>();
+            builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IAuthService, AuthService>();
-            builder.Services.AddScoped<IExercisesHandler, ExercisesHandler>();
+
+            builder.Services.AddScoped<IExerciseCardsRepository, ExerciseCardsRepository>();
             builder.Services.AddScoped<IExercisesService, ExercisesService>();
+
+            builder.Services.AddScoped<IWorkoutRepository, WorkoutRepository>();
+            builder.Services.AddScoped<IWorkoutsService, WorkoutsService>();
 
             var app = builder.Build();
 
@@ -49,6 +107,8 @@ namespace GymRatService
             app.UseHttpsRedirection();
 
             app.UseCors("AllowReactApp");
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 
