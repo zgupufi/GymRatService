@@ -31,7 +31,10 @@ namespace GymRatService
                     });
             });
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers().AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+            });
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
@@ -47,8 +50,8 @@ namespace GymRatService
 
                 // Aici îi spunem la nivel global ca Swagger să ceară acest token pe rutele [Authorize]
                 c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement()
-    {
-        {
+                {
+                    {
             new Microsoft.OpenApi.Models.OpenApiSecurityScheme
             {
                 Reference = new Microsoft.OpenApi.Models.OpenApiReference
@@ -70,19 +73,19 @@ namespace GymRatService
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-.AddJwtBearer(options =>
+            .AddJwtBearer(options =>
 {
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["JwtSettings:Issuer"], // Aici pui setările din appsettings.json
-        ValidAudience = builder.Configuration["JwtSettings:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Key"]))
-    };
-});
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = builder.Configuration["JwtSettings:Issuer"], 
+                ValidAudience = builder.Configuration["JwtSettings:Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Key"]))
+            };
+             });
 
             builder.Services.AddDbContext<DBContext>(options => options.UseNpgsql(connectionString));
 
@@ -94,6 +97,9 @@ namespace GymRatService
 
             builder.Services.AddScoped<IWorkoutRepository, WorkoutRepository>();
             builder.Services.AddScoped<IWorkoutsService, WorkoutsService>();
+
+            builder.Services.AddScoped<ICompletedSetsRepository, CompletedSetsRepository>();
+            builder.Services.AddScoped<ICompletedSetsService, CompletedSetsService>();
 
             var app = builder.Build();
 
