@@ -25,7 +25,7 @@ namespace GymRatService
                 options.AddPolicy("AllowReactApp",
                     policy =>
                     {
-                        policy.WithOrigins("https://gym-rat-foica.vercel.app") 
+                        policy.WithOrigins("https://gym-rat-zgupufis-projects.vercel.app") 
                               .AllowAnyHeader()
                               .AllowAnyMethod();
                     });
