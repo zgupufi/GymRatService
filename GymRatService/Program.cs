@@ -1,4 +1,4 @@
-﻿using GymRatService.BLL.Core.Interfaces;
+using GymRatService.BLL.Core.Interfaces;
 using GymRatService.BLL.Services;
 using GymRatService.DAL.Core;
 using GymRatService.DAL.Core.Interfaces;
@@ -25,7 +25,11 @@ namespace GymRatService
                 options.AddPolicy("AllowReactApp",
                     policy =>
                     {
-                        policy.WithOrigins("https://gym-rat-zgupufis-projects.vercel.app") 
+                        policy.WithOrigins(
+                                "https://gym-rat-zgupufis-projects.vercel.app",
+                                "https://gymrat-app.vercel.app",
+                                "http://localhost:5173"
+                              ) 
                               .AllowAnyHeader()
                               .AllowAnyMethod();
                     });
@@ -114,7 +118,7 @@ namespace GymRatService
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+            // app.UseHttpsRedirection(); // Disabled for Render free tier
 
             app.UseCors("AllowReactApp");
 
