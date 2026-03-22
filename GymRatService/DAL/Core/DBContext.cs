@@ -17,5 +17,6 @@ namespace GymRatService.DAL.Core
         public DbSet<WorkoutExercise> WorkoutExercises { get; set; }
         public DbSet<WorkoutSet> WorkoutSets { get; set; }
         public DbSet<CompletedSet> CompletedSets { get; set; }
+        public DbSet<UserWeeklySplit> UserWeeklySplits { get; set; }
     }
 }

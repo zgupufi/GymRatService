@@ -101,6 +101,10 @@ namespace GymRatService
             builder.Services.AddScoped<ICompletedSetsRepository, CompletedSetsRepository>();
             builder.Services.AddScoped<ICompletedSetsService, CompletedSetsService>();
 
+            builder.Services.AddScoped<IPersonalizedSplitsService, PersonalizedSplitsService>();
+            builder.Services.AddScoped<IPersonalizedSplitsRepository, PersonalizedSplitsRepository>();
+
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
