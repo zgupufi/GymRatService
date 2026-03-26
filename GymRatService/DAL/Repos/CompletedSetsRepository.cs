@@ -14,6 +14,11 @@ namespace GymRatService.DAL.Repos
             _context = context;
         }
 
+        public async Task<List<CompletedSet>> GetExerciseHistoryAsync(int exerciseCardId, string userId)
+        {
+           return await _context.CompletedSets.Where(cs=> cs.UserId == userId && cs.ExerciseCardId==exerciseCardId).OrderBy(s=>s.CompletedAt).ToListAsync();
+        }
+
         public async Task<List<CompletedSet>> GetRecentSetsByWorkoutIdAsync(Guid workoutId, string userId)
         {
             var exerciseIds = await _context.WorkoutExercises.Where(we => we.WorkoutId == workoutId).Select(we => we.ExerciseCardId).ToListAsync();

@@ -45,5 +45,13 @@ namespace GymRatService.API.Controllers
             var recentSets = await _completedSetsService.GetRecentSetsByWorkoutIdAsync(workoutId, userId);
             return Ok(recentSets);
         }
+
+        [HttpGet("history")]
+        public async Task<IActionResult> GetExerciseHistory([FromQuery] int exerciseCardId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var exerciseHistory = await _completedSetsService.GetExerciseHistoryAsync(exerciseCardId, userId);
+            return Ok(exerciseHistory);
+        }
     }
 }

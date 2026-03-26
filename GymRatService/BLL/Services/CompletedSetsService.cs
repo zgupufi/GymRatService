@@ -13,6 +13,12 @@ namespace GymRatService.BLL.Services
             _completedSetsRepository = completedSetsRepository;
         }
 
+        public Task<List<CompletedSet>> GetExerciseHistoryAsync(int exerciseCardId, string userId)
+        {
+            var exerciseHistory = _completedSetsRepository.GetExerciseHistoryAsync(exerciseCardId, userId); 
+            return exerciseHistory;
+        }
+
         public async Task<List<CompletedSet>> GetRecentSetsByWorkoutIdAsync(Guid workoutId, string userId)
         {
            return await _completedSetsRepository.GetRecentSetsByWorkoutIdAsync(workoutId, userId);

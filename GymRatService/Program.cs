@@ -26,9 +26,7 @@ namespace GymRatService
                     policy =>
                     {
                         policy.WithOrigins(
-                                "https://gym-rat-zgupufis-projects.vercel.app",
-                                "https://gymrat-app.vercel.app",
-                                "http://localhost:5173"
+                                "https://gymrat-app.vercel.app"
                               ) 
                               .AllowAnyHeader()
                               .AllowAnyMethod();
