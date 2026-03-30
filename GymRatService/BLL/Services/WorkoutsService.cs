@@ -1,4 +1,4 @@
-﻿using GymRatService.BLL.Core.Interfaces;
+using GymRatService.BLL.Core.Interfaces;
 using GymRatService.Common.DTOs.Workout;
 using GymRatService.Common.Models.Workout;
 using GymRatService.DAL.Core.Interfaces;
@@ -31,11 +31,13 @@ namespace GymRatService.BLL.Services
             workout.Name = updateWorkoutDTO.Name;
             workout.WorkoutExercises.Clear();
 
+            int currentOrder = 0;
             foreach (var exerciseDto in updateWorkoutDTO.Exercises)
             {
                 var newExercise = new WorkoutExercise
                 {
                     ExerciseCardId = exerciseDto.Id,
+                    OrderIndex = currentOrder++,
                     Sets = new List<WorkoutSet>()
                 };
 
@@ -53,7 +55,6 @@ namespace GymRatService.BLL.Services
                     newExercise.Sets.Add(newSet);
                 }
 
-                // 4. Adaugi exercițiul plin de serii în antrenamentul mare
                 workout.WorkoutExercises.Add(newExercise);
             }
 
@@ -70,7 +71,7 @@ namespace GymRatService.BLL.Services
                 id = w.Id,
                 name = w.Name,
                 dateCreated = w.Date,
-                exercises = w.WorkoutExercises.Select(we => new
+                exercises = w.WorkoutExercises.OrderBy(we => we.OrderIndex).Select(we => new
                 {
                     id = we.ExerciseCardId,
                     name = we.ExerciseCard.Name,

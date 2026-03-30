@@ -1,4 +1,4 @@
-﻿namespace GymRatService.Common.Models.Workout
+namespace GymRatService.Common.Models.Workout
 {
     public class WorkoutExercise
     {
@@ -13,7 +13,9 @@
         public ExerciseCard ExerciseCard { get; set; }
 
         // Lista cu seriile (sets), greutatea și repetările pentru ACEST exercițiu 
+        public int OrderIndex { get; set; }
         public List<WorkoutSet> Sets { get; set; } = new();
+
     }
 
 }
