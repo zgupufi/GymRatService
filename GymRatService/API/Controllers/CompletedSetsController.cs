@@ -1,24 +1,35 @@
-﻿using GymRatService.BLL.Core.Interfaces;
+using GymRatService.BLL.Core.Interfaces;
 using GymRatService.Common.DTOs.CompletedSets;
 using GymRatService.Common.Models;
+using GymRatService.DAL.Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace GymRatService.API.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class CompletedSetsController : Controller
     {
         public readonly ICompletedSetsService _completedSetsService;
+        private readonly IWorkoutRepository _workoutRepository;
 
-        public CompletedSetsController(ICompletedSetsService completedSetsService)
+        public CompletedSetsController(ICompletedSetsService completedSetsService, IWorkoutRepository workoutRepository)
         {
             _completedSetsService = completedSetsService;
+            _workoutRepository = workoutRepository;
         }
         [HttpPost]
         public async Task<IActionResult> SaveCompletedSet([FromBody] SaveCompletedSetsDTO completedSetsDto)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            
+            var workout = await _workoutRepository.GetWorkoutByIdAndUserIdAsync(completedSetsDto.WorkoutId, userId);
+            if (workout == null) {
+                return Forbid();
+            }
             var setsToSave = new List<CompletedSet>();
             foreach (var completedSet in completedSetsDto.Sets)
             {

@@ -1,12 +1,14 @@
-﻿using GymRatService.BLL.Core.Interfaces;
+using GymRatService.BLL.Core.Interfaces;
 using GymRatService.BLL.Services;
 using GymRatService.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GymRatService.API.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class PersonalizedSplitController : Controller
     {
