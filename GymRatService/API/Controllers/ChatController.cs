@@ -33,13 +33,27 @@ namespace GymRatBackend.Controllers
             _personalizedSplitsService = personalizedSplitsService;
         }
 
+        private async Task<HttpResponseMessage> SendWithRetryAsync(string url, object body, JsonSerializerOptions options)
+        {
+            int[] delays = { 5000, 10000, 15000 };
+            HttpResponseMessage response = null;
+            for (int i = 0; i <= delays.Length; i++)
+            {
+                response = await _httpClient.PostAsJsonAsync(url, body, options);
+                if ((int)response.StatusCode != 429) return response;
+                if (i < delays.Length)
+                    await Task.Delay(delays[i]);
+            }
+            return response;
+        }
+
         [HttpPost]
         public async Task<IActionResult> PostMessage([FromBody] ChatRequestDto userRequest)
         {
             if (string.IsNullOrWhiteSpace(_apiKey))
                 return StatusCode(500, "API Key is missing on the server.");
 
-            var googleApiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_apiKey}";
+            var googleApiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={_apiKey}";
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             var requestObj = new
@@ -57,12 +71,12 @@ namespace GymRatBackend.Controllers
                             new {
                                 name = "get_workouts",
                                 description = "Get the list of all workout routines saved by the user.",
-                                parameters = new { type = "OBJECT", properties = new {} }
+                                parameters = new { type = "OBJECT", properties = new { } }
                             },
                             new {
                                 name = "get_weekly_schedule",
                                 description = "Get the user's personalized weekly training split schedule.",
-                                parameters = new { type = "OBJECT", properties = new {} }
+                                parameters = new { type = "OBJECT", properties = new { } }
                             },
                             new {
                                 name = "delete_workout",
@@ -106,7 +120,7 @@ namespace GymRatBackend.Controllers
             };
 
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-            var response = await _httpClient.PostAsJsonAsync(googleApiUrl, requestObj, options);
+            var response = await SendWithRetryAsync(googleApiUrl, requestObj, options);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -187,7 +201,7 @@ namespace GymRatBackend.Controllers
                     }
                 });
 
-                var response2 = await _httpClient.PostAsJsonAsync(googleApiUrl, requestObj, options);
+                var response2 = await SendWithRetryAsync(googleApiUrl, requestObj, options);
                 
                 if (!response2.IsSuccessStatusCode)
                 {
