@@ -46,6 +46,7 @@ namespace GymRatBackend.Controllers
             {
                 systemInstruction = new
                 {
+                    role = "user",
                     parts = new[] { new { text = "You are GymRat Coach, an AI specifically designed to help people build muscle and get fit. Be friendly and motivating. You also have tools to read and manage the user's workouts and splits. Use the tools when the user asks about their workouts, schedule, or wants to delete a workout." } }
                 },
                 tools = new[]
@@ -56,11 +57,13 @@ namespace GymRatBackend.Controllers
                         {
                             new {
                                 name = "get_workouts",
-                                description = "Get the list of all workout routines saved by the user."
+                                description = "Get the list of all workout routines saved by the user.",
+                                parameters = new { type = "OBJECT", properties = new {} }
                             },
                             new {
                                 name = "get_weekly_schedule",
-                                description = "Get the user's personalized weekly training split schedule."
+                                description = "Get the user's personalized weekly training split schedule.",
+                                parameters = new { type = "OBJECT", properties = new {} }
                             },
                             new {
                                 name = "delete_workout",
