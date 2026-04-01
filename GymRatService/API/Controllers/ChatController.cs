@@ -52,7 +52,7 @@ namespace GymRatBackend.Controllers
                 {
                     new
                     {
-                        function_declarations = new object[]
+                        functionDeclarations = new object[]
                         {
                             new {
                                 name = "get_workouts",
