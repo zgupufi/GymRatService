@@ -7,7 +7,9 @@
         // Referința către exercițiul din antrenamentul curent
         public Guid WorkoutExerciseId { get; set; }
         public WorkoutExercise WorkoutExercise { get; set; }
-
+        /// <summary>
+        /// //
+        /// </summary>
         public int SetNumber { get; set; }
         public double WeightKg { get; set; } 
         public int Reps { get; set; } 

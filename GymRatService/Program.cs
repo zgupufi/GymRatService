@@ -107,6 +107,7 @@ namespace GymRatService
             builder.Services.AddScoped<IPersonalizedSplitsService, PersonalizedSplitsService>();
             builder.Services.AddScoped<IPersonalizedSplitsRepository, PersonalizedSplitsRepository>();
 
+            builder.Services.AddHttpClient();
 
             var app = builder.Build();
 
