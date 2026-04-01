@@ -1,24 +1,35 @@
-﻿using GymRatService.Common.DTOs.GeminiDTOs;  
+using GymRatService.Common.DTOs.GeminiDTOs;  
+using GymRatService.BLL.Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System.Net.Http;
+using System.Net.Http.Json;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System;
 
 namespace GymRatBackend.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class ChatController : ControllerBase
     {
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
+        private readonly IWorkoutsService _workoutsService;
+        private readonly IPersonalizedSplitsService _personalizedSplitsService;
 
-        // "Tragem" HttpClient-ul și Configurarea/Setările în controller
-        public ChatController(HttpClient httpClient, IConfiguration configuration)
+        public ChatController(HttpClient httpClient, IConfiguration configuration, 
+            IWorkoutsService workoutsService, IPersonalizedSplitsService personalizedSplitsService)
         {
             _httpClient = httpClient;
             _apiKey = configuration["GeminiSettings:ApiKey"] ?? "";
+            _workoutsService = workoutsService;
+            _personalizedSplitsService = personalizedSplitsService;
         }
 
         [HttpPost]
@@ -28,20 +39,57 @@ namespace GymRatBackend.Controllers
                 return StatusCode(500, "API Key is missing on the server.");
 
             var googleApiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_apiKey}";
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Construim JSON-ul identic cu așteptările Google
-            var requestBody = new GeminiRequest
+            var requestObj = new
             {
-                contents = new[] {
-                    new {
+                systemInstruction = new
+                {
+                    parts = new[] { new { text = "You are GymRat Coach, an AI specifically designed to help people build muscle and get fit. Be friendly and motivating. You also have tools to read and manage the user's workouts and splits. Use the tools when the user asks about their workouts, schedule, or wants to delete a workout." } }
+                },
+                tools = new[]
+                {
+                    new
+                    {
+                        function_declarations = new object[]
+                        {
+                            new {
+                                name = "get_workouts",
+                                description = "Get the list of all workout routines saved by the user."
+                            },
+                            new {
+                                name = "get_weekly_schedule",
+                                description = "Get the user's personalized weekly training split schedule."
+                            },
+                            new {
+                                name = "delete_workout",
+                                description = "Delete a specific workout from the user's library. You MUST pass the exact Guid of the workout.",
+                                parameters = new {
+                                    type = "OBJECT",
+                                    properties = new {
+                                        workoutId = new {
+                                            type = "STRING",
+                                            description = "The Guid ID of the workout to delete."
+                                        }
+                                    },
+                                    required = new[] { "workoutId" }
+                                }
+                            }
+                        }
+                    }
+                },
+                contents = new List<object>
+                {
+                    new
+                    {
                         role = "user",
                         parts = new[] { new { text = userRequest.Message } }
                     }
                 }
             };
 
-            // Trimitem mesajul
-            var response = await _httpClient.PostAsJsonAsync(googleApiUrl, requestBody);
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var response = await _httpClient.PostAsJsonAsync(googleApiUrl, requestObj, options);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -49,11 +97,83 @@ namespace GymRatBackend.Controllers
                 return StatusCode((int)response.StatusCode, $"Error from Gemini: {error}");
             }
 
-            // Citim răspunsul
-            var responseData = await response.Content.ReadFromJsonAsync<GeminiResponse>();
-            var botReply = responseData?.candidates?[0]?.content?.parts?[0]?.text ?? "Nu am putut procesa mesajul.";
+            var responseStr = await response.Content.ReadAsStringAsync();
+            var responseData = JsonSerializer.Deserialize<GeminiResponse>(responseStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var firstPart = responseData?.candidates?[0]?.content?.parts?[0];
 
-            // Returnăm doar textul AI-ului (simplu și curat) către aplicația React
+            if (firstPart?.functionCall != null)
+            {
+                var funcName = firstPart.functionCall.name;
+                object serviceResult = null;
+
+                try
+                {
+                    if (funcName == "get_workouts")
+                    {
+                        serviceResult = await _workoutsService.GetFormattedWorkoutsByUserIdAsync(userId);
+                    }
+                    else if (funcName == "get_weekly_schedule")
+                    {
+                        serviceResult = await _personalizedSplitsService.GetUserWeeklySplitByUserIdAsync(userId);
+                    }
+                    else if (funcName == "delete_workout")
+                    {
+                        if (firstPart.functionCall.args.TryGetValue("workoutId", out var wIdObj))
+                        {
+                            var wIdStr = wIdObj.ToString();
+                            if (Guid.TryParse(wIdStr, out var wId))
+                            {
+                                var success = await _workoutsService.DeleteWorkoutAsync(wId, userId);
+                                serviceResult = new { success, message = success ? "Workout deleted." : "Workout not found." };
+                            }
+                            else serviceResult = new { error = "Invalid Guid format." };
+                        }
+                        else serviceResult = new { error = "Missing workoutId." };
+                    }
+                    else serviceResult = new { error = "Unknown function call." };
+                }
+                catch (Exception ex)
+                {
+                    serviceResult = new { error = ex.Message };
+                }
+
+                requestObj.contents.Add(new
+                {
+                    role = "model",
+                    parts = new[] { new { functionCall = firstPart.functionCall } }
+                });
+
+                requestObj.contents.Add(new
+                {
+                    role = "function",
+                    parts = new[] {
+                        new {
+                            functionResponse = new {
+                                name = funcName,
+                                response = new {
+                                    name = funcName,
+                                    content = serviceResult
+                                }
+                            }
+                        }
+                    }
+                });
+
+                var response2 = await _httpClient.PostAsJsonAsync(googleApiUrl, requestObj, options);
+                
+                if (!response2.IsSuccessStatusCode)
+                {
+                    var error = await response2.Content.ReadAsStringAsync();
+                    return StatusCode((int)response2.StatusCode, $"Error from Gemini Function response: {error}");
+                }
+
+                var responseStr2 = await response2.Content.ReadAsStringAsync();
+                var responseData2 = JsonSerializer.Deserialize<GeminiResponse>(responseStr2, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var finalBotReply = responseData2?.candidates?[0]?.content?.parts?[0]?.text ?? "Nu am putut procesa mesajul.";
+                return Ok(new { reply = finalBotReply });
+            }
+
+            var botReply = firstPart?.text ?? "Nu am putut procesa mesajul.";
             return Ok(new { reply = botReply });
         }
     }

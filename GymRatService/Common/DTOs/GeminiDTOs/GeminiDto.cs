@@ -1,4 +1,4 @@
-﻿namespace GymRatService.Common.DTOs.GeminiDTOs
+namespace GymRatService.Common.DTOs.GeminiDTOs
 {
     public class ChatRequestDto
     {
@@ -20,10 +20,17 @@
     }
     public class Content
     {
+        public string role { get; set; }
         public Part[] parts { get; set; }
     }
     public class Part
     {
         public string text { get; set; }
+        public FunctionCall functionCall { get; set; }
+    }
+    public class FunctionCall
+    {
+        public string name { get; set; }
+        public System.Collections.Generic.Dictionary<string, object> args { get; set; }
     }
 }
