@@ -1,4 +1,5 @@
 using GymRatService.Common.DTOs.GeminiDTOs;  
+using GymRatService.Common.DTOs.Workout;
 using GymRatService.BLL.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -74,6 +75,20 @@ namespace GymRatBackend.Controllers
                                     },
                                     required = new[] { "workoutId" }
                                 }
+                            },
+                            new {
+                                name = "create_workout",
+                                description = "Create a new blank workout routine for the user.",
+                                parameters = new {
+                                    type = "OBJECT",
+                                    properties = new {
+                                        name = new {
+                                            type = "STRING",
+                                            description = "The name of the new workout."
+                                        }
+                                    },
+                                    required = new[] { "name" }
+                                }
                             }
                         }
                     }
@@ -115,6 +130,17 @@ namespace GymRatBackend.Controllers
                     else if (funcName == "get_weekly_schedule")
                     {
                         serviceResult = await _personalizedSplitsService.GetUserWeeklySplitByUserIdAsync(userId);
+                    }
+                    else if (funcName == "create_workout")
+                    {
+                        if (firstPart.functionCall.args.TryGetValue("name", out var nameObj))
+                        {
+                            var wName = nameObj.ToString();
+                            var wDto = new CreateWorkoutDTO { Name = wName };
+                            var workout = await _workoutsService.CreateWorkoutAsync(userId, wDto);
+                            serviceResult = new { success = true, workout };
+                        }
+                        else serviceResult = new { error = "Missing name." };
                     }
                     else if (funcName == "delete_workout")
                     {
