@@ -9,5 +9,6 @@ namespace GymRatService.BLL.Core.Interfaces
         Task<Workout> UpdateWorkoutAsync(Guid workoutId,string userId,UpdateWorkoutDTO updateWorkoutDTO);   
         Task<Object> GetFormattedWorkoutsByUserIdAsync(string userId);
         Task<bool> DeleteWorkoutAsync(Guid workoutId, string userId);
+        Task<object> SearchExercisesAsync(string query);
     }
 }

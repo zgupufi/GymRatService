@@ -2,16 +2,24 @@ using GymRatService.BLL.Core.Interfaces;
 using GymRatService.Common.DTOs.Workout;
 using GymRatService.Common.Models.Workout;
 using GymRatService.DAL.Core.Interfaces;
+using GymRatService.DAL.Repos;
 
 namespace GymRatService.BLL.Services
 {
     public class WorkoutsService : IWorkoutsService
     {
         private readonly IWorkoutRepository _workoutRepository;
-        public WorkoutsService(IWorkoutRepository workoutRepository)
+
+        // 1. Am adăugat repository-ul pentru a putea căuta în baza de date cu exerciții
+        private readonly IExerciseCardsRepository _exerciseCardRepository;
+
+        // 2. L-am injectat în constructor
+        public WorkoutsService(IWorkoutRepository workoutRepository, IExerciseCardsRepository exerciseCardRepository)
         {
             _workoutRepository = workoutRepository;
+            _exerciseCardRepository = exerciseCardRepository;
         }
+
         public async Task<Workout> CreateWorkoutAsync(string userId, CreateWorkoutDTO workoutDTO)
         {
             var workout = new Workout
@@ -51,7 +59,6 @@ namespace GymRatService.BLL.Services
                         IsCompleted = false
                     };
 
-                    // 3. Adaugi seria generată în obiectul pentru baza de date! (NU în DTO)
                     newExercise.Sets.Add(newSet);
                 }
 
@@ -91,9 +98,26 @@ namespace GymRatService.BLL.Services
 
             if (workout == null)
                 return false;
-            await _workoutRepository.DeleteWorkoutAsync(workout,userId);
+            await _workoutRepository.DeleteWorkoutAsync(workout, userId);
             return true;
+        }
 
+        // 3. Am adăugat logica de Search pe care o va apela AI-ul
+        public async Task<object> SearchExercisesAsync(string query)
+        {
+            // Apelăm baza de date pentru a găsi exerciții care conțin query-ul în nume sau mușchi
+            var exercisesDb = await _exerciseCardRepository.SearchExercisesAsync(query);
+
+            // Returnăm o listă formatată curat pentru ca AI-ul să o înțeleagă ușor
+            var formattedExercises = exercisesDb.Select(e => new
+            {
+                id = e.Id,
+                name = e.Name,
+                main_muscle = e.MainMuscle ?? "",
+                equipment = e.Equipment ?? ""
+            }).ToList();
+
+            return formattedExercises;
         }
     }
 }
