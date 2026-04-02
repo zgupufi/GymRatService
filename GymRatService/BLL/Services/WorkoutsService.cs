@@ -78,14 +78,16 @@ namespace GymRatService.BLL.Services
                 id = w.Id,
                 name = w.Name,
                 dateCreated = w.Date,
-                exercises = w.WorkoutExercises?.OrderBy(we => we.OrderIndex).Select(we => new
-                {
-                    id = we.ExerciseCardId,
-                    name = we.ExerciseCard?.Name ?? "Unknown Exercise",
-                    main_muscle = we.ExerciseCard?.MainMuscle ?? "",
-                    equipment = we.ExerciseCard?.Equipment ?? "",
-                    targetSets = we.Sets != null ? we.Sets.Count : 0
-                }).ToList() ?? new List<object>()
+                exercises = (w.WorkoutExercises ?? new List<GymRatService.Common.Models.Workout.WorkoutExercise>())
+                    .OrderBy(we => we.OrderIndex)
+                    .Select(we => new
+                    {
+                        id = we.ExerciseCardId,
+                        name = we.ExerciseCard?.Name ?? "Unknown Exercise",
+                        main_muscle = we.ExerciseCard?.MainMuscle ?? "",
+                        equipment = we.ExerciseCard?.Equipment ?? "",
+                        targetSets = we.Sets != null ? we.Sets.Count : 0
+                    }).ToList()
             }).ToList();
 
             return formattedWorkouts;
