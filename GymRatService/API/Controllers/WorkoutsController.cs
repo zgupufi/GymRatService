@@ -1,4 +1,4 @@
-﻿using GymRatService.BLL.Core.Interfaces;
+using GymRatService.BLL.Core.Interfaces;
 using GymRatService.Common.DTOs.Workout;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +21,7 @@ namespace GymRatService.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var workout = await _workoutService.CreateWorkoutAsync(userId, createWorkoutDTO);
-            return Ok(workout);
+            return Ok(new { id = workout.Id, name = workout.Name, dateCreated = workout.Date });
         }
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateWorkout(Guid id, [FromBody] UpdateWorkoutDTO updateWorkoutDTO)
@@ -29,7 +29,7 @@ namespace GymRatService.API.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var workout = await _workoutService.UpdateWorkoutAsync(id, userId, updateWorkoutDTO);
             if (workout == null) return NotFound();
-            return Ok(workout);
+            return Ok(new { id = workout.Id, name = workout.Name, dateCreated = workout.Date });
         }
         [HttpGet]
         public async Task<IActionResult> GetWorkouts()
@@ -37,6 +37,13 @@ namespace GymRatService.API.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var workouts = await _workoutService.GetFormattedWorkoutsByUserIdAsync(userId);
             return Ok(workouts);
+        }
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetWorkout(Guid id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var workoutDetails = await _workoutService.GetWorkoutDetailsAsync(id, userId);
+            return Ok(workoutDetails);
         }
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteWorkout(Guid id)

@@ -117,7 +117,7 @@ namespace GymRatService.BLL.Services
             var exercisesDb = await _exerciseCardRepository.SearchExercisesAsync(query);
 
             // Returnăm o listă formatată curat pentru ca AI-ul să o înțeleagă ușor
-            var formattedExercises = exercisesDb.Select(e => new
+            var formattedExercises = exercisesDb.Take(7).Select(e => new ///take 7? las asa?
             {
                 id = e.Id,
                 name = e.Name,
