@@ -10,7 +10,7 @@ using System.Text.Json;
 namespace GymRatBackend.Controllers
 {
     [ApiController]
-    [Authorize]
+    //[Authorize]
     [Route("api/[controller]")]
     public class ChatController : ControllerBase
     {
@@ -74,7 +74,7 @@ BEHAVIOR:
             if (string.IsNullOrWhiteSpace(_apiKey))
                 return StatusCode(500, "API Key is missing on the server.");
 
-            var googleApiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={_apiKey}";
+            var googleApiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_apiKey}";
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             // ── Build multi-turn contents from history + current message ──────────
