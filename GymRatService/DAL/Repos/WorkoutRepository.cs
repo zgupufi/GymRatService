@@ -30,7 +30,12 @@ namespace GymRatService.DAL.Repos
 
         public async Task<Workout> GetWorkoutByIdAndUserIdAsync(Guid workoutId, string userId)
         {
-            return await _context.Workouts.Include(w => w.WorkoutExercises).FirstOrDefaultAsync(w => w.Id == workoutId && w.UserId == userId);
+            return await _context.Workouts
+                .Include(w => w.WorkoutExercises)
+                    .ThenInclude(we => we.ExerciseCard)
+                .Include(w => w.WorkoutExercises)
+                    .ThenInclude(we => we.Sets)
+                .FirstOrDefaultAsync(w => w.Id == workoutId && w.UserId == userId);
         }
 
         public async Task<List<Workout>> GetWorkoutsByUserIdAsync(string userId)

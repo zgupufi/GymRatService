@@ -96,6 +96,7 @@ namespace GymRatService.BLL.Services
                     id = we.ExerciseCardId,
                     name = we.ExerciseCard.Name,
                     main_muscle = we.ExerciseCard?.MainMuscle ?? "",
+                    equipment = we.ExerciseCard?.Equipment ?? "",
                     targetSets = we.Sets != null ? we.Sets.Count : 0
                 }).ToList()
             };
