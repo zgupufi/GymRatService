@@ -1,4 +1,4 @@
-﻿using GymRatService.BLL.Core.Interfaces;
+using GymRatService.BLL.Core.Interfaces;
 using GymRatService.Common.DTOs.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -43,7 +43,13 @@ namespace GymRatService.Controllers
             try
             {
                 var result = await _authService.RegisterAsync(registerUser);
-                return Ok(result);
+                return Ok(new 
+                { 
+                    id = result.Id, 
+                    email = result.Email, 
+                    firstName = result.FirstName, 
+                    lastName = result.LastName 
+                });
             }
             catch (InvalidOperationException ex)
             {

@@ -37,32 +37,74 @@ namespace GymRatService.BLL.Services
             if (workout == null) return null;
 
             workout.Name = updateWorkoutDTO.Name;
-            workout.WorkoutExercises.Clear();
 
+            var existingExercisesPool = workout.WorkoutExercises.ToList();
             int currentOrder = 0;
+
             foreach (var exerciseDto in updateWorkoutDTO.Exercises)
             {
-                var newExercise = new WorkoutExercise
+                var existingEx = existingExercisesPool.FirstOrDefault(e => e.ExerciseCardId == exerciseDto.Id);
+                
+                if (existingEx != null)
                 {
-                    ExerciseCardId = exerciseDto.Id,
-                    OrderIndex = currentOrder++,
-                    Sets = new List<WorkoutSet>()
-                };
+                    existingExercisesPool.Remove(existingEx);
+                    existingEx.OrderIndex = currentOrder++;
 
-                for (int i = 1; i <= exerciseDto.TargetSets; i++)
-                {
-                    var newSet = new WorkoutSet
+                    if (existingEx.Sets == null) existingEx.Sets = new List<WorkoutSet>();
+                    
+                    var currentSetsCount = existingEx.Sets.Count;
+                    if (exerciseDto.TargetSets > currentSetsCount)
                     {
-                        SetNumber = i,
-                        WeightKg = 0,
-                        Reps = 0,
-                        IsCompleted = false
+                        // Add new empty sets to reach target
+                        for (int i = currentSetsCount + 1; i <= exerciseDto.TargetSets; i++)
+                        {
+                            existingEx.Sets.Add(new WorkoutSet
+                            {
+                                SetNumber = i,
+                                WeightKg = 0,
+                                Reps = 0,
+                                IsCompleted = false
+                            });
+                        }
+                    }
+                    else if (exerciseDto.TargetSets < currentSetsCount)
+                    {
+                        // Remove excess sets from the end
+                        var setsToRemove = existingEx.Sets.OrderByDescending(s => s.SetNumber).Take(currentSetsCount - exerciseDto.TargetSets).ToList();
+                        foreach (var s in setsToRemove)
+                        {
+                            existingEx.Sets.Remove(s);
+                        }
+                    }
+                }
+                else
+                {
+                    // Create completely new exercise
+                    var newExercise = new WorkoutExercise
+                    {
+                        ExerciseCardId = exerciseDto.Id,
+                        OrderIndex = currentOrder++,
+                        Sets = new List<WorkoutSet>()
                     };
 
-                    newExercise.Sets.Add(newSet);
+                    for (int i = 1; i <= exerciseDto.TargetSets; i++)
+                    {
+                        newExercise.Sets.Add(new WorkoutSet
+                        {
+                            SetNumber = i,
+                            WeightKg = 0,
+                            Reps = 0,
+                            IsCompleted = false
+                        });
+                    }
+                    workout.WorkoutExercises.Add(newExercise);
                 }
+            }
 
-                workout.WorkoutExercises.Add(newExercise);
+            // Remove any exercises that were deleted by the user/bot
+            foreach (var oldEx in existingExercisesPool)
+            {
+                workout.WorkoutExercises.Remove(oldEx);
             }
 
             await _workoutRepository.UpdateWorkoutAsync(workout);

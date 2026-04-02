@@ -155,8 +155,11 @@ COMMUNICATION GUARDRAILS:
             var parts = responseData?.candidates?[0]?.content?.parts;
 
             // MODIFICAREA MAJORĂ: Am schimbat "if" în "while" ca să poată apela funcții la infinit până e gata
-            while (parts != null && parts.Any(p => p.functionCall != null))
+            int executionCount = 0;
+            const int MAX_TOOL_TURNS = 5;
+            while (parts != null && parts.Any(p => p.functionCall != null) && executionCount < MAX_TOOL_TURNS)
             {
+                executionCount++;
                 var functionParts = parts.Where(p => p.functionCall != null).ToList();
                 var modelTurnParts = new List<object>();
                 var toolTurnParts = new List<object>();
@@ -296,7 +299,14 @@ COMMUNICATION GUARDRAILS:
             }
 
             // Odată ce bucla s-a oprit (AI-ul nu a mai trimis funcții), returnăm textul final!
-            var botReply = parts?.FirstOrDefault(p => p.text != null)?.text ?? "Could not process the message.";
+            var botReply = parts?.FirstOrDefault(p => p.text != null)?.text;
+            if (string.IsNullOrEmpty(botReply))
+            {
+                if (executionCount >= MAX_TOOL_TURNS)
+                    botReply = "The operation was too complex and timed out. Please try a simpler request.";
+                else
+                    botReply = "Could not process the message.";
+            }
             return Ok(new { reply = botReply });
         }
 
