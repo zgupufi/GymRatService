@@ -42,11 +42,16 @@ PROGRAMMING & PROGRESSIVE OVERLOAD:
 
 TOOL EXECUTION LOGIC (Read Carefully):
 You are the bridge between the user's chat and the backend database. You MUST follow these sequences:
-1. ID Verification: You cannot memorize or guess Guids. If you need a Workout ID, call `get_workouts` first. If you need an Exercise ID, call `search_exercises` first.
-2. Search Exercises: You HAVE a tool called `search_exercises`. Use it anytime you need to find an exercise in the database.
-3. Creation Sequence: If a user says 'Create a chest day', call `create_workout`.
-4. Workout Modification (IMPORTANT): You have ONE tool to modify workouts: `update_workout`. Because this tool overwrites the entire routine, if the user asks to 'add an exercise', you MUST first call `get_workouts` to see their existing exercises, then call `search_exercises` to get the ID of the new exercise, append the new exercise to the existing list, and send the FULL combined list back via `update_workout`.
-5. Deletion: If a user asks to delete a workout, ALWAYS call `get_workouts` first to find the correct Guid, then call `delete_workout`.
+1. ID Verification & Workout Discovery: Call `get_workouts` to see the user's list of saved workouts. This returns ONLY names and IDs (no exercises).
+2. Workout Details (CRITICAL): If you need to see the specific exercises inside a workout (e.g., to answer a question about it or before modifying it), you MUST call `get_workout_details` using its Guid.
+3. Search Exercises: You have a tool called `search_exercises`. Use it anytime you need to find an exercise ID in the database.
+4. Creation Sequence: If a user asks to build a new workout, call `create_workout`.
+5. Workout Modification (IMPORTANT): You have ONE tool to modify workouts: `update_workout`. Because this tool overwrites the entire routine, you MUST preserve existing exercises. Sequence:
+   - Call `get_workouts` to find the workout's Guid (if unknown).
+   - Call `get_workout_details` to get the current list of exercises.
+   - Call `search_exercises` to get the ID(s) of any new exercises to add.
+   - Append the new exercises to the existing list and send the FULL combined list back via `update_workout`.
+6. Deletion: If a user asks to delete a workout, call `get_workouts` to find the correct Guid, then call `delete_workout`.
 
 COMMUNICATION GUARDRAILS:
 - Tone: Clinical, authoritative, concise, and direct.
@@ -87,7 +92,7 @@ COMMUNICATION GUARDRAILS:
 
             var contents = new List<object>();
 
-            const int MAX_HISTORY_TURNS = 10;
+            const int MAX_HISTORY_TURNS = 4;
             var trimmedHistory = userRequest.History
                 .TakeLast(MAX_HISTORY_TURNS)
                 .ToList();
@@ -124,6 +129,7 @@ COMMUNICATION GUARDRAILS:
             functionDeclarations = new object[]
             {
                 new { name = "get_workouts", description = "Get the list of all workout routines saved by the user.", parameters = new { type = "OBJECT", properties = new { } } },
+                new {name = "get_workout_details",description = "Get the full list of exercises and sets for a SPECIFIC workout.",parameters = new {type = "OBJECT",properties = new {workoutId = new { type = "STRING", description = "The Guid ID of the workout." }},required = new string[] { "workoutId" }}},
                 new { name = "get_weekly_schedule", description = "Get the user's personalized weekly training split schedule.", parameters = new { type = "OBJECT", properties = new { } } },
                 new { name = "delete_workout", description = "Delete a specific workout from the user's library.", parameters = new { type = "OBJECT", properties = new { workoutId = new { type = "STRING", description = "The Guid ID of the workout to delete." } }, required = new string[] { "workoutId" } } },
                 new { name = "create_workout", description = "Create a new blank workout routine for the user with the given name.", parameters = new { type = "OBJECT", properties = new { name = new { type = "STRING", description = "The name of the new workout." } }, required = new string[] { "name" } } },
@@ -169,6 +175,15 @@ COMMUNICATION GUARDRAILS:
                         else if (funcName == "get_weekly_schedule")
                         {
                             serviceResult = await _personalizedSplitsService.GetUserWeeklySplitByUserIdAsync(userId);
+                        }
+                        else if (funcName == "get_workout_details")
+                        {
+                            if (part.functionCall.args.TryGetValue("workoutId", out var wIdObj) &&
+                                Guid.TryParse(wIdObj.ToString(), out var wId))
+                            {
+                                serviceResult = await _workoutsService.GetWorkoutDetailsAsync(wId, userId);
+                            }
+                            else serviceResult = new { error = "Invalid workoutId." };
                         }
                         else if (funcName == "create_workout")
                         {

@@ -77,21 +77,29 @@ namespace GymRatService.BLL.Services
             {
                 id = w.Id,
                 name = w.Name,
-                dateCreated = w.Date,
-                exercises = w.WorkoutExercises.OrderBy(we => we.OrderIndex).Select(we => new
-                {
-                    id = we.ExerciseCardId,
-                    name = we.ExerciseCard.Name,
-                    main_muscle = we.ExerciseCard?.MainMuscle ?? "",
-                    equipment = we.ExerciseCard?.Equipment ?? "",
-                    targetSets = we.Sets != null ? we.Sets.Count : 0,
-                    uniqueId = Guid.NewGuid().ToString()
-                }).ToList()
+                dateCreated = w.Date
             }).ToList();
 
             return formattedWorkouts;
         }
+        public async Task<object> GetWorkoutDetailsAsync(Guid workoutId, string userId)
+        {
+            var workout = await _workoutRepository.GetWorkoutByIdAndUserIdAsync(workoutId, userId);
+            if (workout == null) return new { error = "Workout not found." };
 
+            return new
+            {
+                id = workout.Id,
+                name = workout.Name,
+                exercises = workout.WorkoutExercises.OrderBy(we => we.OrderIndex).Select(we => new
+                {
+                    id = we.ExerciseCardId,
+                    name = we.ExerciseCard.Name,
+                    main_muscle = we.ExerciseCard?.MainMuscle ?? "",
+                    targetSets = we.Sets != null ? we.Sets.Count : 0
+                }).ToList()
+            };
+        }
         public async Task<bool> DeleteWorkoutAsync(Guid workoutId, string userId)
         {
             var workout = await _workoutRepository.GetWorkoutByIdAndUserIdAsync(workoutId, userId);
