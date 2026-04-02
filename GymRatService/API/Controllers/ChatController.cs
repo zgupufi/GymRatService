@@ -87,6 +87,10 @@ BEHAVIOR:
                 .TakeLast(MAX_HISTORY_TURNS)
                 .ToList();
 
+            // Gemini requires contents to start with a 'user' turn — drop leading 'model' turns.
+            while (trimmedHistory.Count > 0 && trimmedHistory[0].Role?.ToLower() == "ai")
+                trimmedHistory.RemoveAt(0);
+
             foreach (var turn in trimmedHistory)
             {
                 var geminiRole = turn.Role == "ai" ? "model" : "user";
