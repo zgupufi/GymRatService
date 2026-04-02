@@ -1,16 +1,11 @@
-using GymRatService.Common.DTOs.GeminiDTOs;  
+using GymRatService.Common.DTOs.GeminiDTOs;
 using GymRatService.Common.DTOs.Workout;
 using GymRatService.BLL.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using System.Net.Http;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System;
 
 namespace GymRatBackend.Controllers
 {
@@ -24,7 +19,33 @@ namespace GymRatBackend.Controllers
         private readonly IWorkoutsService _workoutsService;
         private readonly IPersonalizedSplitsService _personalizedSplitsService;
 
-        public ChatController(HttpClient httpClient, IConfiguration configuration, 
+        // Compact, domain-authoritative system prompt.
+        // Encodes muscle anatomy upfront so Gemini doesn't hallucinate muscle group membership.
+        // Written in imperative style (no pleasantries) to reduce prompt token count.
+        private const string SYSTEM_PROMPT = @"You are GymRat Coach, an expert AI strength & hypertrophy coach embedded in the GymRat app.
+
+MUSCLE GROUP RULES (never violate these):
+- PUSH muscles: chest, front delts, lateral delts, triceps
+- PULL muscles: lats, rhomboids, traps, rear delts, biceps, brachialis, brachioradialis (forearms)
+- LEGS muscles: quads, hamstrings, glutes, calves, hip flexors, adductors
+- A 'Push' workout MUST include at minimum: a chest compound + shoulder work + tricep isolation
+- A 'Pull' workout MUST include at minimum: a vertical pull (lat focus) + horizontal row (rear delt/rhomboid) + bicep isolation
+- A 'Legs' workout MUST include at minimum: a quad compound (squat pattern) + hip-hinge (deadlift/RDL pattern) + optional isolation
+- Never build a Pull workout without biceps. Never build a Push without triceps. Never mix Push + Pull primary movers.
+
+WORKOUT STRUCTURE:
+- Order: compound lifts first, isolation last
+- Typical sets: 3-5 for compounds, 3-4 for isolation
+- Rep ranges: strength 3-6, hypertrophy 6-12, endurance 12-20
+
+BEHAVIOR:
+- Be concise and direct. No filler phrases.
+- When creating a workout plan respond in a clean, structured list.
+- You have tools to read/manage the user's workouts and weekly split. Use them when the user asks about their data or wants to create/delete a workout.
+- Never invent workout IDs. Always call get_workouts first if you need an ID.
+- If the user asks a general fitness question, answer from your knowledge without calling tools.";
+
+        public ChatController(HttpClient httpClient, IConfiguration configuration,
             IWorkoutsService workoutsService, IPersonalizedSplitsService personalizedSplitsService)
         {
             _httpClient = httpClient;
@@ -56,11 +77,39 @@ namespace GymRatBackend.Controllers
             var googleApiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={_apiKey}";
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            // ── Build multi-turn contents from history + current message ──────────
+            // Gemini requires alternating user/model roles in contents.
+            // History from the frontend uses role "user"/"ai"; we map "ai" → "model".
+            var contents = new List<object>();
+
+            const int MAX_HISTORY_TURNS = 10; // cap to limit token spend
+            var trimmedHistory = userRequest.History
+                .TakeLast(MAX_HISTORY_TURNS)
+                .ToList();
+
+            foreach (var turn in trimmedHistory)
+            {
+                var geminiRole = turn.Role == "ai" ? "model" : "user";
+                contents.Add(new
+                {
+                    role = geminiRole,
+                    parts = new[] { new { text = turn.Text } }
+                });
+            }
+
+            // Append the current user message
+            contents.Add(new
+            {
+                role = "user",
+                parts = new[] { new { text = userRequest.Message } }
+            });
+
+            // ── Build the full request ────────────────────────────────────────────
             var requestObj = new
             {
                 systemInstruction = new
                 {
-                    parts = new[] { new { text = "You are GymRat Coach, an AI specifically designed to help people build muscle and get fit. Be friendly and motivating. You also have tools to read and manage the user's workouts and splits. Use the tools when the user asks about their workouts, schedule, or wants to delete a workout." } }
+                    parts = new[] { new { text = SYSTEM_PROMPT } }
                 },
                 tools = new[]
                 {
@@ -80,7 +129,7 @@ namespace GymRatBackend.Controllers
                             },
                             new {
                                 name = "delete_workout",
-                                description = "Delete a specific workout from the user's library. You MUST pass the exact Guid of the workout.",
+                                description = "Delete a specific workout from the user's library. Call get_workouts first to obtain the exact Guid.",
                                 parameters = new {
                                     type = "OBJECT",
                                     properties = new {
@@ -94,7 +143,7 @@ namespace GymRatBackend.Controllers
                             },
                             new {
                                 name = "create_workout",
-                                description = "Create a new blank workout routine for the user.",
+                                description = "Create a new blank workout routine for the user with the given name.",
                                 parameters = new {
                                     type = "OBJECT",
                                     properties = new {
@@ -109,14 +158,7 @@ namespace GymRatBackend.Controllers
                         }
                     }
                 },
-                contents = new List<object>
-                {
-                    new
-                    {
-                        role = "user",
-                        parts = new[] { new { text = userRequest.Message } }
-                    }
-                }
+                contents
             };
 
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -132,10 +174,11 @@ namespace GymRatBackend.Controllers
             var responseData = JsonSerializer.Deserialize<GeminiResponse>(responseStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             var firstPart = responseData?.candidates?[0]?.content?.parts?[0];
 
+            // ── Handle tool call ──────────────────────────────────────────────────
             if (firstPart?.functionCall != null)
             {
                 var funcName = firstPart.functionCall.name;
-                object serviceResult = null;
+                object serviceResult;
 
                 try
                 {
@@ -151,8 +194,7 @@ namespace GymRatBackend.Controllers
                     {
                         if (firstPart.functionCall.args.TryGetValue("name", out var nameObj))
                         {
-                            var wName = nameObj.ToString();
-                            var wDto = new CreateWorkoutDTO { Name = wName };
+                            var wDto = new CreateWorkoutDTO { Name = nameObj.ToString() };
                             var workout = await _workoutsService.CreateWorkoutAsync(userId, wDto);
                             serviceResult = new { success = true, workout };
                         }
@@ -160,62 +202,56 @@ namespace GymRatBackend.Controllers
                     }
                     else if (funcName == "delete_workout")
                     {
-                        if (firstPart.functionCall.args.TryGetValue("workoutId", out var wIdObj))
+                        if (firstPart.functionCall.args.TryGetValue("workoutId", out var wIdObj)
+                            && Guid.TryParse(wIdObj.ToString(), out var wId))
                         {
-                            var wIdStr = wIdObj.ToString();
-                            if (Guid.TryParse(wIdStr, out var wId))
-                            {
-                                var success = await _workoutsService.DeleteWorkoutAsync(wId, userId);
-                                serviceResult = new { success, message = success ? "Workout deleted." : "Workout not found." };
-                            }
-                            else serviceResult = new { error = "Invalid Guid format." };
+                            var success = await _workoutsService.DeleteWorkoutAsync(wId, userId);
+                            serviceResult = new { success, message = success ? "Workout deleted." : "Workout not found." };
                         }
-                        else serviceResult = new { error = "Missing workoutId." };
+                        else serviceResult = new { error = "Invalid or missing workoutId." };
                     }
-                    else serviceResult = new { error = "Unknown function call." };
+                    else serviceResult = new { error = "Unknown function." };
                 }
                 catch (Exception ex)
                 {
                     serviceResult = new { error = ex.Message };
                 }
 
-                requestObj.contents.Add(new
+                // Append model's function call + tool result to contents and call Gemini again
+                contents.Add(new
                 {
                     role = "model",
                     parts = new[] { new { functionCall = firstPart.functionCall } }
                 });
 
-                requestObj.contents.Add(new
+                contents.Add(new
                 {
                     role = "tool",
                     parts = new[] {
                         new {
                             functionResponse = new {
                                 name = funcName,
-                                response = new {
-                                    name = funcName,
-                                    content = serviceResult
-                                }
+                                response = new { name = funcName, content = serviceResult }
                             }
                         }
                     }
                 });
 
                 var response2 = await SendWithRetryAsync(googleApiUrl, requestObj, options);
-                
+
                 if (!response2.IsSuccessStatusCode)
                 {
                     var error = await response2.Content.ReadAsStringAsync();
-                    return StatusCode((int)response2.StatusCode, $"Error from Gemini Function response: {error}");
+                    return StatusCode((int)response2.StatusCode, $"Error from Gemini function response: {error}");
                 }
 
                 var responseStr2 = await response2.Content.ReadAsStringAsync();
                 var responseData2 = JsonSerializer.Deserialize<GeminiResponse>(responseStr2, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                var finalBotReply = responseData2?.candidates?[0]?.content?.parts?[0]?.text ?? "Nu am putut procesa mesajul.";
-                return Ok(new { reply = finalBotReply });
+                var finalReply = responseData2?.candidates?[0]?.content?.parts?[0]?.text ?? "Could not process the message.";
+                return Ok(new { reply = finalReply });
             }
 
-            var botReply = firstPart?.text ?? "Nu am putut procesa mesajul.";
+            var botReply = firstPart?.text ?? "Could not process the message.";
             return Ok(new { reply = botReply });
         }
     }

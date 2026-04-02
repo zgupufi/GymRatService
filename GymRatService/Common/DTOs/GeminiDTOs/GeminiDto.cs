@@ -1,8 +1,17 @@
 namespace GymRatService.Common.DTOs.GeminiDTOs
 {
+    // A single prior turn sent from the frontend (role = "user" | "ai")
+    public class ChatTurnDto
+    {
+        public string Role { get; set; }
+        public string Text { get; set; }
+    }
+
     public class ChatRequestDto
     {
         public string Message { get; set; }
+        // Last N turns from the chat UI (oldest first), excluding the current message
+        public List<ChatTurnDto> History { get; set; } = new();
     }
     // Cum cerem de la Google
     public class GeminiRequest
