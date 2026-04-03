@@ -193,7 +193,7 @@ Autonomy: Answer fitness questions using knowledge without tools.";
 
             // MODIFICAREA MAJORĂ: Am schimbat "if" în "while" ca să poată apela funcții la infinit până e gata
             int executionCount = 0;
-            const int MAX_TOOL_TURNS = 5;
+            const int MAX_TOOL_TURNS = 10;
             while (parts != null && parts.Any(p => p.functionCall != null) && executionCount < MAX_TOOL_TURNS)
             {
                 executionCount++;
