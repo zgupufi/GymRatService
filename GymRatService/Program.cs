@@ -29,7 +29,8 @@ namespace GymRatService
                                 "https://gymrat-app.vercel.app",
                                 "http://localhost:5173",
                                 "capacitor://localhost",
-                                "http://localhost"
+                                "http://localhost",
+                                "https://localhost"
                               ) 
                               .AllowAnyHeader()
                               .AllowAnyMethod();
