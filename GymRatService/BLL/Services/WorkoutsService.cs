@@ -115,22 +115,24 @@ namespace GymRatService.BLL.Services
         {
             var workoutsDb = await _workoutRepository.GetWorkoutsByUserIdAsync(userId);
 
-            var formattedWorkouts = workoutsDb.Select(w => new
-            {
-                id = w.Id,
-                name = w.Name,
-                dateCreated = w.Date,
-                exercises = (w.WorkoutExercises ?? new List<GymRatService.Common.Models.Workout.WorkoutExercise>())
-                    .OrderBy(we => we.OrderIndex)
-                    .Select(we => new
-                    {
-                        id = we.ExerciseCardId,
-                        name = we.ExerciseCard?.Name ?? "Unknown Exercise",
-                        main_muscle = we.ExerciseCard?.MainMuscle ?? "",
-                        equipment = we.ExerciseCard?.Equipment ?? "",
-                        targetSets = we.Sets != null ? we.Sets.Count : 0
-                    }).ToList()
-            }).ToList();
+            var formattedWorkouts = workoutsDb
+                .OrderByDescending(w => w.Date)
+                .Take(5)
+                .Select(w => new
+                {
+                    id = w.Id,
+                    name = w.Name,
+                    dateCreated = w.Date,
+                    exercises = (w.WorkoutExercises ?? new List<GymRatService.Common.Models.Workout.WorkoutExercise>())
+                        .OrderBy(we => we.OrderIndex)
+                        .Select(we => new
+                        {
+                            id = we.ExerciseCardId,
+                            name = we.ExerciseCard?.Name ?? "Unknown Exercise",
+                            muscleGroup = we.ExerciseCard?.MainMuscle ?? "",
+                            targetSets = we.Sets != null ? we.Sets.Count : 0
+                        }).ToList()
+                }).ToList();
 
             return formattedWorkouts;
         }
@@ -169,13 +171,13 @@ namespace GymRatService.BLL.Services
             // Apelăm baza de date pentru a găsi exerciții care conțin query-ul în nume sau mușchi
             var exercisesDb = await _exerciseCardRepository.SearchExercisesAsync(query);
 
-            // Returnăm o listă formatată curat pentru ca AI-ul să o înțeleagă ușor
-            var formattedExercises = exercisesDb.Take(7).Select(e => new ///take 7? las asa?
+            // Returnăm o listă extrem de concisă pentru ca AI-ul să o înțeleagă ușor (fără imagini, id-uri enervante sau descrieri lungi)
+            var formattedExercises = exercisesDb.Take(7).Select(e => new 
             {
                 id = e.Id,
                 name = e.Name,
-                main_muscle = e.MainMuscle ?? "",
-                equipment = e.Equipment ?? ""
+                muscleGroup = e.MainMuscle ?? ""
+                // Scoatem 'equipment' și alte câmpuri care nu sunt absolut vitale pentru GymRat Coach (economisim tokeni!)
             }).ToList();
 
             return formattedExercises;
